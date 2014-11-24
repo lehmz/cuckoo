@@ -102,7 +102,6 @@ class MongoDB(Report):
         # the original dictionary and possibly compromise the following
         # reporting modules.
         report = dict(results)
-
         # Store the sample in GridFS.
         if results["info"]["category"] == "file":
             sample = File(self.file_path)
@@ -119,6 +118,14 @@ class MongoDB(Report):
             pcap_id = self.store_file(pcap)
             report["network"] = {"pcap_id": pcap_id}
             report["network"].update(results["network"])
+
+        # Store the process memory dump file in GridFS and reference it back in the report.
+        for idx, procmem in enumerate(report['procmemory']):
+            procmem_path = os.path.join(self.analysis_path, "memory", "{0}.dmp".format(procmem['pid']))
+            procmem_file = File(procmem_path)
+            if procmem_file.valid():
+                procmem_id = self.store_file(procmem_file)
+                report["procmemory"][idx].update({"procmem_id": procmem_id})
 
         # Walk through the dropped files, store them in GridFS and update the
         # report with the ObjectIds.
